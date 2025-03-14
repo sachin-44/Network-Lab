@@ -1,0 +1,70 @@
+SERVER
+#include <stdio.h>  
+#include <stdlib.h>  
+#include <string.h>  
+#include <unistd.h>  
+#include <arpa/inet.h>  
+#include <sys/socket.h>  
+#define PORT 8080  
+#define SIZE 1024  
+int main(){  
+int sockfd,newfd;  
+struct sockaddr_in address;  
+char buffer[SIZE];  
+int addr_len;  
+if((sockfd=socket(AF_INET,SOCK_STREAM,0))==0){  
+perror("Socket creation failed"); }  
+address.sin_family = AF_INET;  
+address.sin_port = htons(PORT);  
+address.sin_addr.s_addr = INADDR_ANY;  
+if(bind(sockfd,(struct sockaddr*)&address,sizeof(address))<0){  
+perror("Bind failed"); }  
+if(listen(sockfd,3)<0){  
+perror("Listen failed"); }  
+printf("Echo server listening on port %d.....\n",PORT);  
+addr_len = sizeof(address);  
+if((newfd=accept(sockfd,(struct sockaddr*)&address,&addr_len))<0){  
+perror("Accept failed"); }  
+printf("Connection established");  
+ssize_t byte;  
+while((byte=read(newfd,buffer,SIZE))>0){  
+buffer[byte] = '\0';  
+printf("Received: %s",buffer);  
+send(newfd,buffer,byte,0); }  
+printf("Connection closed.\n");  
+close(newfd);  
+close(sockfd); }
+
+
+CLIENT
+#include <stdio.h>  
+#include <stdlib.h>  
+#include <string.h>  
+#include <unistd.h>  
+#include <arpa/inet.h>  
+#include <sys/socket.h>  
+#define PORT 8080  
+#define SIZE 1024  
+int main(){  
+int sock;  
+struct sockaddr_in address;  
+char buffer[SIZE];  
+if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {  
+perror("Socket creation error");  
+}  
+address.sin_family = AF_INET;  
+address.sin_port = htons(PORT);  
+address.sin_addr.s_addr = INADDR_ANY;  
+if(connect(sock,(struct sockaddr*)&address,sizeof(address))<0){  
+perror("Connection failed");  
+}  
+printf("Connected to the server. Type messages to send.\n");  
+printf("Client: ");  
+fgets(buffer,SIZE,stdin);  
+send(sock, buffer, strlen(buffer), 0);  
+ssize_t bytes_received = read(sock, buffer,SIZE);  
+printf("Server closed connection.\n");  
+buffer[bytes_received] = '\0';  
+printf("Echo from server: %s", buffer);  
+close(sock);  
+} 
