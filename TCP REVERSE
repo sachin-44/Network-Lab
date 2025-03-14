@@ -1,0 +1,133 @@
+SERVER
+// tcp_reverse_server.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+#define PORT 8080
+#define MAXLINE 1024
+
+// Function to reverse a string
+void reverseString(char *str) {
+    int len = strlen(str);
+    for (int i = 0; i < len / 2; i++) {
+        char temp = str[i];
+        str[i] = str[len - i - 1];
+        str[len - i - 1] = temp;
+    }
+}
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    socklen_t addr_len = sizeof(address);
+    char buffer[MAXLINE];
+
+    // Create socket
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configure server address
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 5) < 0) {
+        perror("Listen failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server is listening on port %d...\n", PORT);
+
+    // Accept client connection
+    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, &addr_len)) < 0) {
+        perror("Accept failed");
+        exit(EXIT_FAILURE);
+    }
+    printf("Client connected.\n");
+
+    // Receive string from client
+    ssize_t bytes_received = read(new_socket, buffer, MAXLINE);
+    buffer[bytes_received] = '\0';
+    printf("Received from client: %s\n", buffer);
+
+    // Reverse the string
+    reverseString(buffer);
+    printf("Reversed string: %s\n", buffer);
+
+    // Send reversed string back to client
+    send(new_socket, buffer, strlen(buffer), 0);
+    printf("Reversed string sent to client.\n");
+
+    // Close sockets
+    close(new_socket);
+    close(server_fd);
+    return 0;
+}
+
+CLIENT
+// tcp_reverse_client.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+#define PORT 8080
+#define MAXLINE 1024
+
+int main() {
+    int sockfd;
+    struct sockaddr_in server_addr;
+    char buffer[MAXLINE];
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configure server address
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    // Connect to the server
+    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Connection failed");
+        exit(EXIT_FAILURE);
+    }
+    printf("Connected to server.\n");
+
+    // Get user input
+    printf("Enter a string to reverse: ");
+    fgets(buffer, MAXLINE, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+
+    // Send the string to the server
+    send(sockfd, buffer, strlen(buffer), 0);
+    printf("Sent to server: %s\n", buffer);
+
+    // Receive reversed string from the server
+    ssize_t bytes_received = read(sockfd, buffer, MAXLINE);
+    buffer[bytes_received] = '\0';
+    printf("Reversed from server: %s\n", buffer);
+
+    // Close the socket
+    close(sockfd);
+    return 0;
+}
+
