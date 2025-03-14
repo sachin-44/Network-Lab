@@ -1,0 +1,92 @@
+SERVER
+#include <stdio.h>  
+#include <stdlib.h>  
+#include <string.h>  
+#include <unistd.h>  
+#include <arpa/inet.h>  
+#define PORT 8080  
+#define BUFFER_SIZE 255  
+int main() {  
+int sockfd, n;  
+struct sockaddr_in serv_addr;  
+char buffer[BUFFER_SIZE];  
+char result[BUFFER_SIZE];  
+sockfd = socket(AF_INET, SOCK_STREAM, 0);  
+if (sockfd < 0) {  
+perror("Socket creation failed");  
+exit(EXIT_FAILURE);  
+}  
+serv_addr.sin_family = AF_INET;  
+serv_addr.sin_port = htons(PORT);  
+serv_addr.sin_addr.s_addr = INADDR_ANY;  
+if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {  
+perror("Connection failed");  
+close(sockfd);  
+exit(EXIT_FAILURE);  
+}  
+printf("Connected to server!\n");  
+while (1) {  
+printf("Enter key (or 'exit' to quit): ");  
+fgets(buffer, BUFFER_SIZE, stdin);  
+buffer[strcspn(buffer, "\n")] = 0;  
+if (strcmp(buffer, "exit") == 0) {  
+break; }  
+write(sockfd, buffer, strlen(buffer));  
+memset(result, 0, BUFFER_SIZE);  
+n = read(sockfd, result, BUFFER_SIZE);  
+if (n <= 0) {  
+printf("Server disconnected.\n");  
+break;  
+}  
+printf("Value: %s\n", result);  
+}  
+close(sockfd);  
+} 
+
+
+
+
+CLIENT
+#include <stdio.h>  
+#include <stdlib.h>  
+#include <string.h>  
+#include <unistd.h>  
+#include <arpa/inet.h>  
+#define PORT 8080  
+#define BUFFER_SIZE 255  
+int main() {  
+int sockfd, n;  
+struct sockaddr_in serv_addr;  
+char buffer[BUFFER_SIZE];  
+char result[BUFFER_SIZE];  
+sockfd = socket(AF_INET, SOCK_STREAM, 0);  
+if (sockfd < 0) {  
+perror("Socket creation failed");  
+exit(EXIT_FAILURE);  
+}  
+serv_addr.sin_family = AF_INET;  
+serv_addr.sin_port = htons(PORT);  
+serv_addr.sin_addr.s_addr = INADDR_ANY;  
+if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {  
+perror("Connection failed");  
+close(sockfd);  
+exit(EXIT_FAILURE);  
+}  
+printf("Connected to server!\n");  
+while (1) {  
+printf("Enter key (or 'exit' to quit): ");  
+fgets(buffer, BUFFER_SIZE, stdin);  
+buffer[strcspn(buffer, "\n")] = 0;  
+if (strcmp(buffer, "exit") == 0) {  
+break; }  
+write(sockfd, buffer, strlen(buffer));  
+memset(result, 0, BUFFER_SIZE);  
+n = read(sockfd, result, BUFFER_SIZE);  
+if (n <= 0) {  
+printf("Server disconnected.\n");  
+break;  
+}  
+printf("Value: %s\n", result);  
+}  
+close(sockfd);  
+} 
